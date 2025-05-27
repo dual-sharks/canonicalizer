@@ -31,7 +31,6 @@ class Canonicalizer:
             root = root.head
 
         clause_tokens = list(root.subtree)
-        # use document-level indices for end-of-sentence
         clause_end = sent_doc.end
         for token in clause_tokens:
             if token.dep_ == "cc" and token.text.lower() in {"and", "but"}:
