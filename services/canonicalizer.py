@@ -2,6 +2,7 @@ import spacy
 import yaml
 from spacy.matcher import PhraseMatcher
 from transformers import pipeline
+from domain.topic_mapping import map_descriptor_to_topic
 
 class Canonicalizer:
     def __init__(self, general_tag_path: str, creature_tag_path: str):
@@ -26,31 +27,37 @@ class Canonicalizer:
         return result['label'].lower()
 
     def _extract_descriptors(self, sent_doc, match_span):
-        root = match_span.root
-        while root.head != root and root.pos_ != "VERB":
-            root = root.head
-
-        clause_tokens = list(root.subtree)
-        clause_end = sent_doc.end
-        for token in clause_tokens:
-            if token.dep_ == "cc" and token.text.lower() in {"and", "but"}:
-                clause_end = token.i
-                break
-
         descriptors = []
-        for token in clause_tokens:
-            if match_span.start <= token.i < clause_end and token.pos_ == "ADJ":
-                modifiers = [child.text for child in token.lefts if child.pos_ == "ADV"]
-                modifiers = [m for m in modifiers if m.lower() not in {"very", "really", "super", "way"}]
-                phrase = " ".join(modifiers + [token.text])
-                descriptors.append(phrase)
+        seen = set()
 
-            elif (
-                match_span.start <= token.i < clause_end
-                and token.pos_ in {"ADV", "VERB"}
-                and not token.is_stop
-            ):
-                descriptors.append(token.text)
+        for token in match_span:
+            # adjectives directly modifying the token
+            for child in token.children:
+                if child.dep_ in {"amod", "acomp"} and child.pos_ == "ADJ":
+                    advs = [c.text for c in child.children if c.dep_ == "advmod"]
+                    advs = [a for a in advs if a.lower() not in {"very", "really", "super", "way"}]
+                    phrase = " ".join(advs + [child.text])
+                    if phrase not in seen:
+                        descriptors.append(phrase)
+                        seen.add(phrase)
+
+            # adjective complements of governing verbs
+            if token.head.pos_ in {"VERB", "AUX"} and token.dep_ in {"nsubj", "dobj", "obj", "nsubjpass"}:
+                for child in token.head.children:
+                    if child.dep_ == "acomp" and child.pos_ == "ADJ":
+                        advs = [c.text for c in child.children if c.dep_ == "advmod"]
+                        advs = [a for a in advs if a.lower() not in {"very", "really", "super", "way"}]
+                        phrase = " ".join(advs + [child.text])
+                        if phrase not in seen:
+                            descriptors.append(phrase)
+                            seen.add(phrase)
+
+                # optionally include the verb itself unless it's a copula
+                if token.head.lemma_ != "be":
+                    verb = token.head.text
+                    if verb not in seen:
+                        descriptors.append(verb)
+                        seen.add(verb)
 
         return " ".join(descriptors).strip()
 
@@ -69,6 +76,7 @@ class Canonicalizer:
                 sent = span.sent
                 descriptor = self._extract_descriptors(sent, span)
                 sentiment = self._get_sentiment(sent.text)
+                topic = map_descriptor_to_topic(descriptor)
 
                 results.append({
                     "phrase": span.text,
@@ -76,6 +84,7 @@ class Canonicalizer:
                     "category": category,
                     "descriptor": descriptor,
                     "sentiment": sentiment,
-                    "sentence": sent.text
+                    "sentence": sent.text,
+                    "topic": topic
                 })
         return results

@@ -14,3 +14,27 @@ def test_extract_descriptors_no_conjunction():
     sent = match_span.sent
     result = canon._extract_descriptors(sent, match_span)
     assert result == "absolutely amazing"
+
+
+def test_extract_descriptors_includes_verb_subject():
+    nlp = spacy.load("en_core_web_sm")
+    canon = Canonicalizer.__new__(Canonicalizer)
+    text = "The dragon killed me."
+    doc = nlp(text)
+    match_token = next(t for t in doc if t.text.lower() == "dragon")
+    match_span = doc[match_token.i : match_token.i + 1]
+    sent = match_span.sent
+    result = canon._extract_descriptors(sent, match_span)
+    assert "killed" in result
+
+
+def test_extract_descriptors_includes_verb_object():
+    nlp = spacy.load("en_core_web_sm")
+    canon = Canonicalizer.__new__(Canonicalizer)
+    text = "I killed the dragon."
+    doc = nlp(text)
+    match_token = next(t for t in doc if t.text.lower() == "dragon")
+    match_span = doc[match_token.i : match_token.i + 1]
+    sent = match_span.sent
+    result = canon._extract_descriptors(sent, match_span)
+    assert "killed" in result
