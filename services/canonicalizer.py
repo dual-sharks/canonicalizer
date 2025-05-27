@@ -31,7 +31,7 @@ class Canonicalizer:
             root = root.head
 
         clause_tokens = list(root.subtree)
-        clause_end = len(sent_doc)
+        clause_end = sent_doc.end
         for token in clause_tokens:
             if token.dep_ == "cc" and token.text.lower() in {"and", "but"}:
                 clause_end = token.i
