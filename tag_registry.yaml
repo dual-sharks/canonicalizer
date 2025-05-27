@@ -1,0 +1,20 @@
+graphics:
+  - ray tracing
+  - shader
+  - texture
+  - lighting
+  - render
+
+creatures:
+  - coat hanger
+  - monster
+  - enemy
+  - npc
+  - character
+
+performance:
+  - too fast
+  - too slow
+  - laggy
+  - fps
+  - frame rate

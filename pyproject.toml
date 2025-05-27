@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "canonicalizer"
+version = "0.1.0"
+description = ""
+authors = ["Kerim Tricic <kerim.tricic@dualsharks.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.14"
+spacy = "^3.8.7"
+pyyaml = "^6.0.2"
+transformers = "^4.52.3"
+torch = "^2.7.0"
+pandas = "^2.2.3"
+
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
